@@ -25,6 +25,17 @@ def name_for_multiplicity(m):
     }
     return mnames.get(m, f"{m}-plet")
 
+def print_text_plot(N, mults):
+    S_vals = sorted(mults.keys(), reverse=True)
+    max_count = max(mults.values())
+    label_width = max(len(f"{S:g}") for S in S_vals)
+    for S in S_vals:
+        label = f"{S:g}".rjust(label_width)
+        bubbles = '●' * mults[S]
+        print(f"{label} │ {bubbles}")
+    axis = ' ' * (label_width + 1) + '└' + '─' * max_count
+    print(axis + f" N={N}")
+
 def main():
     N = int(input("Enter number of open-shell electrons N: "))
     total, mults = compute_spin_multiplets(N)
@@ -35,6 +46,8 @@ def main():
         name = name_for_multiplicity(m)
         pl = "s" if cnt > 1 else ""
         print(f"   {cnt} {name}{pl}  (S={S}, multiplicity={m})")
+    print("\n→ Spin multiplets distribution:")
+    print_text_plot(N, mults)
     while True:
         S_choice = float(input("\nPick a total spin S from above list: "))
         if S_choice in mults:
