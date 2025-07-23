@@ -25,6 +25,9 @@ def name_for_multiplicity(m):
     }
     return mnames.get(m, f"{m}-plet")
 
+def possible_Ms(S):
+    return [-S + i for i in range(int(2*S) + 1)]
+
 def print_text_plot(N, mults):
     S_vals = sorted(mults.keys(), reverse=True)
     max_count = max(mults.values())
@@ -48,14 +51,19 @@ def main():
         print(f"   {cnt} {name}{pl}  (S={S}, multiplicity={m})")
     print("\n→ Spin multiplets distribution:")
     print_text_plot(N, mults)
+    print("\n→ Possible M_s (spin projection quantum number) for each S:")
+    for S in sorted(mults.keys(), reverse=True):
+        Ms_list = possible_Ms(S)
+        formatted = ', '.join(f"{M:.1f}" for M in Ms_list)
+        print(f"   S={S:g}: M_s ∈ {{ {formatted} }}")
     while True:
         S_choice = float(input("\nPick a total spin S from above list: "))
         if S_choice in mults:
             break
         print("Invalid S, try again.")
     while True:
-        M_choice = float(input("Pick M_s (|M_s| ≤ S, half-integer): "))
-        if abs(M_choice) <= S_choice and (2*M_choice).is_integer():
+        M_choice = float(input("Pick M_s from the list above: "))
+        if M_choice in possible_Ms(S_choice):
             break
         print("Invalid M_s, try again.")
     print(f"\n=== Generating CSFs for N={N}, S={S_choice}, M_s={M_choice} ===\n")

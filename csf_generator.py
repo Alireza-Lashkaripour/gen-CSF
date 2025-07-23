@@ -10,18 +10,16 @@ b = sympy.Function('b')
 
 def sort_spin_functions(expr):
     if expr.is_Add:
-        sorted_terms = [sort_spin_functions(term) for term in expr.args]
-        return sympy.Add(*sorted_terms)
+        return sympy.Add(*(sort_spin_functions(t) for t in expr.args))
     if expr.is_Mul:
-        coeff_parts = []
-        spin_parts = []
-        for factor in expr.args:
-            if isinstance(factor, (a, b)):
-                spin_parts.append(factor)
+        coeffs, spins = [], []
+        for f in expr.args:
+            if isinstance(f, (a, b)):
+                spins.append(f)
             else:
-                coeff_parts.append(factor)
-        spin_parts.sort(key=lambda f: f.args[0])
-        return sympy.Mul(*coeff_parts) * sympy.Mul(*spin_parts)
+                coeffs.append(f)
+        spins.sort(key=lambda f: f.args[0])
+        return sympy.Mul(*coeffs) * sympy.Mul(*spins)
     return expr
 
 def find_paths_recursive(k, current_S, N_target, S_target):
@@ -29,14 +27,14 @@ def find_paths_recursive(k, current_S, N_target, S_target):
         return memo_paths[(k, current_S)]
     if k == N_target:
         return [[S_target]] if current_S == S_target else []
-    if not (0 <= current_S <= k / 2):
+    if not (0 <= current_S <= k/2):
         return []
     paths = []
     for next_S in (current_S + S_half,):
-        for p in find_paths_recursive(k + 1, next_S, N_target, S_target):
+        for p in find_paths_recursive(k+1, next_S, N_target, S_target):
             paths.append([current_S] + p)
     if current_S > 0:
-        for p in find_paths_recursive(k + 1, current_S - S_half, N_target, S_target):
+        for p in find_paths_recursive(k+1, current_S - S_half, N_target, S_target):
             paths.append([current_S] + p)
     memo_paths[(k, current_S)] = paths
     return paths
@@ -53,7 +51,7 @@ def construct_csf(path, M):
         return 1 if S == 0 and M == 0 else 0
     S_parent = path_tuple[-2]
     c_alpha = CG(S_parent, M - S_half, S_half, S_half, S, M).doit()
-    c_beta = CG(S_parent, M + S_half, S_half, -S_half, S, M).doit()
+    c_beta  = CG(S_parent, M + S_half, S_half, -S_half, S, M).doit()
     term_alpha = 0
     if c_alpha != 0:
         p = construct_csf(path_tuple[:-1], M - S_half)
@@ -71,16 +69,21 @@ def construct_csf(path, M):
 def generate_csfs(N, S, M):
     S_sym = sympy.sympify(S)
     M_sym = sympy.sympify(M)
-    if S < 0 or N < 0 or (N % 2 != (2*S_sym) % 2) or abs(M_sym) > S_sym:
+    # ensure half-integers become exact Rationals
+    if isinstance(S_sym, sympy.Float):
+        S_sym = sympy.Rational(int(2*S_sym), 2)
+    if isinstance(M_sym, sympy.Float):
+        M_sym = sympy.Rational(int(2*M_sym), 2)
+    if S_sym < 0 or N < 0 or (N % 2 != (2*S_sym) % 2) or abs(M_sym) > S_sym:
         print("Invalid (N, S, M) combination.")
         return
     memo_paths.clear()
     memo_csf.clear()
     all_paths = find_paths_recursive(0, 0, N, S_sym)
     if not all_paths:
-        print(f"No CSFs are possible for N={N}, S={S}.")
+        print(f"No CSFs are possible for N={N}, S={S_sym}.")
         return
-    print(f"Found {len(all_paths)} CSFs for N={N}, S={S}, M={M}\n")
+    print(f"Found {len(all_paths)} CSFs for N={N}, S={S_sym}, M={M_sym}\n")
     sympy.init_printing(use_unicode=True)
     for i, path in enumerate(all_paths):
         header = f"--- CSF #{i+1} (Path: {path}) ---"
@@ -89,14 +92,10 @@ def generate_csfs(N, S, M):
         if csf == 0:
             print(" (This CSF is zero for the given M value)")
         else:
-            s = sort_spin_functions(csf)
-            p = sympy.simplify(s)
+            p = sympy.simplify(sort_spin_functions(csf))
             sympy.pprint(p)
         print("-" * len(header), "\n")
 
 if __name__ == '__main__':
-    target_N = 4
-    target_S = 0
-    target_M = 0
-    generate_csfs(target_N, target_S, target_M)
+    generate_csfs(4, 0, 0)
 
