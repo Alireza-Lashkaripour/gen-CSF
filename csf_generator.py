@@ -8,20 +8,6 @@ memo_csf = {}
 a = sympy.Function('a')
 b = sympy.Function('b')
 
-def sort_spin_functions(expr):
-    if expr.is_Add:
-        return sympy.Add(*(sort_spin_functions(t) for t in expr.args))
-    if expr.is_Mul:
-        coeffs, spins = [], []
-        for f in expr.args:
-            if isinstance(f, (a, b)):
-                spins.append(f)
-            else:
-                coeffs.append(f)
-        spins.sort(key=lambda f: f.args[0])
-        return sympy.Mul(*coeffs) * sympy.Mul(*spins)
-    return expr
-
 def find_paths_recursive(k, current_S, N_target, S_target):
     if (k, current_S) in memo_paths:
         return memo_paths[(k, current_S)]
